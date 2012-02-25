@@ -7,11 +7,13 @@
 module EventMachine
   module ZeroMQ
     class Context
-      def initialize(threads)
+      attr_reader :zmq_context
+
+      def initialize threads
         @zmq_context = ZMQ::Context.new(threads)
       end
 
-      def self.attach(context)
+      def self.attach context
         allocate.tap {|instance| instance.instance_variable_set(:@zmq_context, context)}
       end
 
@@ -21,13 +23,14 @@ module EventMachine
       # @param [Integer] socket_type One of ZMQ::REQ, ZMQ::REP, ZMQ::PULL, ZMQ::PUSH,
       #   ZMQ::ROUTER, ZMQ::DEALER
       #
-      # @param [Object] handler an object which respond to on_readable(socket, parts)
-      #   and can respond to on_writeable(socket)
+      # @param [Object] handler
+      #   1. An object which responds to on_readable(connection, parts) or respond to on_writeable(connection)
+      #   2. Subclass of EM::ZeroMQ::Connection
       #
-      def socket(type, handler = nil)
-        socket = Socket.new(@zmq_context.socket(type), handler)
+      def socket type, handler = nil, *args
+        socket = Socket.new(@zmq_context.socket(type), handler, *args)
         block_given? ? yield(socket) : socket
       end
-    end
-  end
-end
+    end # Context
+  end # ZeroMQ
+end # EventMachine

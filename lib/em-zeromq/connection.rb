@@ -1,9 +1,10 @@
 module EventMachine
   module ZeroMQ
     class Connection < EventMachine::Connection
-      def initialize socket, handler
-        @socket  = socket
-        @handler = handler
+      attr_reader :socket
+
+      def initialize socket, *args
+        @socket = socket
       end
 
       # send a non blocking message
@@ -38,13 +39,13 @@ module EventMachine
           sent = false
         end
 
-        notify_readable()
+        notify_readable # reckon this is to ensure the REQ-REP lockstep dance happens properly.
         sent
       end
 
       # cleanup when ending loop
       def unbind
-        detach_and_close
+        detach && socket.close
       end
 
       # Make this socket available for reads
@@ -61,6 +62,12 @@ module EventMachine
       def register_writable
         # Subscribe to EM write notifications
         self.notify_writable = true
+      end
+
+      def on_readable messages
+      end
+
+      def on_writable
       end
 
       def notify_readable
@@ -84,7 +91,7 @@ module EventMachine
               end
             end
 
-            handler.on_readable(self, msg_parts) if handler && handler.respond_to?(:on_readable)
+            on_readable(msg_parts)
           else
             break
           end
@@ -98,20 +105,8 @@ module EventMachine
         # should be accepting messages again so stop triggering
         # write events
         self.notify_writable = false
-        handler.on_writable(self) if handler && handler.respond_to?(:on_writable)
-      end
-
-    private
-      attr_reader :socket, :handler
-      # internal methods
-
-      # Detaches the socket from the EM loop,
-      # then closes the socket
-      def detach_and_close
-        detach
-        socket.close
+        on_writable
       end
     end # Connection
   end # ZeroMQ
 end # EventMachine
-

@@ -6,15 +6,15 @@ describe 'Context' do
   end
 
   it 'can be created with a context' do
-    zmq_ctx = ZMQ::Context.new(1)
-    ctx     = EM::ZeroMQ::Context.attach(zmq_ctx)
-    ctx.instance_variable_get('@zmq_context').should == zmq_ctx
+    zmq_context = ZMQ::Context.new(1)
+    context     = EM::ZeroMQ::Context.attach(zmq_context)
+    context.zmq_context.should == zmq_context
   end
 
   it 'can create socket' do
     EM.run do
-      s = @ctx.socket(ZMQ::ROUTER)
-      s.instance_variable_get('@zmq_socket').name.should == 'ROUTER'
+      socket = @ctx.socket(ZMQ::ROUTER)
+      socket.zmq_socket.name.should == 'ROUTER'
       EM.stop
     end
   end

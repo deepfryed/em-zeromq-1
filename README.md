@@ -62,7 +62,11 @@ trap('INT') do
   EM.stop
 end
 
+# attach exisiting context
+context = EM::ZeroMQ::Context.attach(ZMQ::Context.new(2))
+# or create a new one
 context = EM::ZeroMQ::Context.new(1)
+
 EM.run do
   # setup push sockets
   push_socket1     = context.socket(ZMQ::PUSH)  
