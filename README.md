@@ -18,7 +18,7 @@ Supported on:
 - JRuby
 
 While the gem should work on Rubinius and JRuby I mainly use it with MRI 1.9+ so
-there may be some glitchs.
+there may be some glitches.
 
 Want to help out? Ask!
 
@@ -30,9 +30,8 @@ to keep a reference to it in scope, this is what you don't want to do (that's ho
 ```ruby
 EM.run do
   context = EM::ZeroMQ::Context.new(1)
-  dealer_socket = context.sockt(...)
-  dealer_socket.connect(...)
-  dealer_socket.send_msg('', "ping")
+  dealer_connection = context.socket(ZMQ::DEALER).connect('tcp://*:1234')
+  dealer_connection.send('', "ping")
 end
 ```
 
@@ -52,43 +51,43 @@ require 'em-zeromq'
 
 class EMTestPullHandler
   attr_reader :received
-  def on_readable(socket, parts)
+  def on_readable(connection, parts)
     parts.each do |m|
-      puts m.copy_out_string
+      puts m
     end
   end
 end
 
 trap('INT') do
-  EM::stop()
+  EM.stop
 end
 
-ctx = EM::ZeroMQ::Context.new(1)
+context = EM::ZeroMQ::Context.new(1)
 EM.run do
   # setup push sockets
-  push_socket1 = ctx.socket(ZMQ::PUSH)  
-  push_socket1.bind('tcp://127.0.0.1:2091')
+  push_socket1     = context.socket(ZMQ::PUSH)  
+  push_connection1 = push_socket1.bind('tcp://127.0.0.1:2091')
   
-  push_socket2 = ctx.socket(ZMQ::PUSH) do |s|
+  push_connection2 = context.socket(ZMQ::PUSH) do |s|
     s.bind('ipc:///tmp/a')
   end
   
-  push_socket3 = ctx.socket(ZMQ::PUSH)
-  push_socket3.bind('inproc://simple_test')
+  push_socket3     = context.socket(ZMQ::PUSH)
+  push_connection3 = push_socket3.bind('inproc://simple_test')
   
   # setup one pull sockets listening to all push sockets
-  pull_socket = ctx.socket(ZMQ::PULL, EMTestPullHandler.new)
+  pull_socket = context.socket(ZMQ::PULL, EMTestPullHandler.new)
   pull_socket.connect('tcp://127.0.0.1:2091')
   pull_socket.connect('ipc:///tmp/a')
   pull_socket.connect('inproc://simple_test')
   
   n = 0
   
-  EM::PeriodicTimer.new(0.1) do
+  EM.add_periodic_timer(0.1) do
     puts '.'
-    push_socket1.send_msg("t#{n += 1}_")
-    push_socket2.send_msg("i#{n += 1}_")
-    push_socket3.send_msg("p#{n += 1}_")
+    push_connection1.send("t#{n += 1}_")
+    push_connection2.send("i#{n += 1}_")
+    push_connection3.send("p#{n += 1}_")
   end
 end
 ```
